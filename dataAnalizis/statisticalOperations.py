@@ -1,4 +1,10 @@
 import re
+import json
+from typing import List,Dict,Tuple
+
+"""
+
+#-------------------------limpa os dados do arquivo gastosCamaraMunicipalSP-------------------------
 
 with open('gastosCamaraMunicipalSP.csv', encoding="utf8") as csvfile:
     informacao_por_deputado: list = csvfile.read().split('Vereador(a)')
@@ -18,50 +24,72 @@ with open('gastosCamaraMunicipalSP.csv', encoding="utf8") as csvfile:
 
             if gasto is not None:
                 index = informacoes.index(informacao) - 1
-                tipo = informacoes[index]
-                gastos.append((tipo, gasto.string))
 
-        ficha.append(({'nome':informacoes[0].replace(': ', '')}, {'gastos': tuple(gastos)}))
-        for dep in ficha:
-            for item in dep[1]['gastos']:
-                print(item)
-                print('================================================================================================================================================')
-
-
+                nome = re.search('^[A-Z]',informacoes[index])
+                if nome != None:
+                    tipo = informacoes[index]
+                    gastos.append((tipo, gasto.string))
+                else:
+                    tipo = informacao.split(',')[1]
+                    gastos.append((tipo, gasto.string))
 
 
+        ficha.append({'nome': informacoes[0].replace(': ', ''),  'gastos': gastos})
+    json_object = json.dumps(ficha, indent=4,ensure_ascii=False)
+
+    with open("gastosCamaraMunicipalSP_emJson.json", "w", encoding='utf8') as outfile:
+        outfile.write(json_object)
+
+
+"""
+
+ARQUIVO = List[Dict[str, List]]
+
+class OrganizacaoGastosCamara:
+    def __init__(self: object, arquivo_nome: str):
+        with open(arquivo_nome, encoding='utf8') as data:
+            arquivo:ARQUIVO = json.load(data)
+
+        self._arquivo: list = arquivo
+
+    @property
+    def arquivo(self: object):
+        return self._arquivo
+
+    def juntarValoresIguais(self: object, dataToBeCombined: List) -> List:
+        final_data: List = []
+
+        for info in dataToBeCombined:
+            same_info: List = []
+            single_info: List = []
+            to_be_combined = info[0]
+            single_info.append({'info': info[0], 'dadosValores': {'valores': info[-1].split('"')[-2],'howManyTimes': 1}})
+            valores = []
+
+            for second_info in dataToBeCombined:
+                del single_info[:-1]
+                name = second_info[0]
+
+                if to_be_combined == name:
+                    valor = second_info[-1].split('"')[-2]
+                    valores.append(valor)
+                    same_info.append(second_info)
+
+            final_data.append({'info': info[0], 'dadosValores':{'valores': valores,'quantasVezes': len(same_info)}})
+            for info in single_info:
+                final_data.append(info)
+        print(final_data)
+
+        return final_data
 
 
 
-class DataOrganization:
-    def __init__(self: object, data: str):
-        self._data: str = data
 
 
+gastos_camara = OrganizacaoGastosCamara('gastosCamaraMunicipalSP_emJson.json')
 
 
-'''
-: SILVIA DA BANCADA FEMINISTA
-"Natureza da despesa Valor utilizado COMBUSTIVEL 20.190.819/0001-76 CENTRO AUTOMOTIVO THOMAS EDISON 706,52 TOTAL DO ITEM 706,52 CONTRATAÇAO DE PESSOA JURIDICA 44.121.715/0001-78 CH CONSULTORIA EM PLANEJAMENTO E GESTÃO URBANA 4.000,00 TOTAL DO ITEM 4.000,00 INTERMEDIADO - LOCAÇÃO DE VEÍCULOS 50.176.288/0001-28 CAMARA MUNICIPAL DE SÃO PAULO 1.432,67 TOTAL DO ITEM 1.432,67 LOCAÇÃO DE MOVEIS E EQUIPAMENTOS 40.721.413/0001-80 THIAGO ZAMBRANO MAHRENHOLZ 3.080,00 69.064.053/0001-72 SINALL COM E SERV DE MÁQUINAS LTDA 1.175,78 TOTAL DO ITEM 4.255,78 MATERIAL DE ESCRITORIO E OUTROS MATERIAIS DE CONSUMO 06.226.820/0001-82 CENTER PAPEIS COMERCIAL LTDA. 71,85 TOTAL DO ITEM 71,85 TELEFONE MOVEL 02.558.157/0001-62 TELEFONICA BRASIL S/A 78,99 TOTAL DO ITEM 78,99 TOTAL DO MÊS 10.545,81",Natureza da despesa,Valor utilizado,COMBUSTIVEL,20.190.819/0001-76,CENTRO AUTOMOTIVO THOMAS EDISON,"706,52",TOTAL DO ITEM,"706,52",CONTRATAÇAO DE PESSOA JURIDICA,44.121.715/0001-78,CH CONSULTORIA EM PLANEJAMENTO E GESTÃO URBANA,"4.000,00",TOTAL DO ITEM,"4.000,00",INTERMEDIADO - LOCAÇÃO DE VEÍCULOS,50.176.288/0001-28,CAMARA MUNICIPAL DE SÃO PAULO,"1.432,67",TOTAL DO ITEM,"1.432,67",LOCAÇÃO DE MOVEIS E EQUIPAMENTOS,40.721.413/0001-80,THIAGO ZAMBRANO MAHRENHOLZ,"3.080,00",69.064.053/0001-72,SINALL COM E SERV DE MÁQUINAS LTDA,"1.175,78",TOTAL DO ITEM,"4.255,78",MATERIAL DE ESCRITORIO E OUTROS MATERIAIS DE CONSUMO,06.226.820/0001-82,CENTER PAPEIS COMERCIAL LTDA.,"71,85",TOTAL DO ITEM,"71,85",TELEFONE MOVEL,02.558.157/0001-62,TELEFONICA BRASIL S/A,"78,99",TOTAL DO ITEM,"78,99",TOTAL DO MÊS,"10.545,81"
-Natureza da despesa,Valor utilizado
-COMBUSTIVEL
-20.190.819/0001-76,CENTRO AUTOMOTIVO THOMAS EDISON,"706,52"
-TOTAL DO ITEM,"706,52"
-CONTRATAÇAO DE PESSOA JURIDICA
-44.121.715/0001-78,CH CONSULTORIA EM PLANEJAMENTO E GESTÃO URBANA,"4.000,00"
-TOTAL DO ITEM,"4.000,00"
-INTERMEDIADO - LOCAÇÃO DE VEÍCULOS
-50.176.288/0001-28,CAMARA MUNICIPAL DE SÃO PAULO,"1.432,67"
-TOTAL DO ITEM,"1.432,67"
-LOCAÇÃO DE MOVEIS E EQUIPAMENTOS
-40.721.413/0001-80,THIAGO ZAMBRANO MAHRENHOLZ,"3.080,00"
-69.064.053/0001-72,SINALL COM E SERV DE MÁQUINAS LTDA,"1.175,78"
-TOTAL DO ITEM,"4.255,78"
-MATERIAL DE ESCRITORIO E OUTROS MATERIAIS DE CONSUMO
-06.226.820/0001-82,CENTER PAPEIS COMERCIAL LTDA.,"71,85"
-TOTAL DO ITEM,"71,85"
-TELEFONE MOVEL
-02.558.157/0001-62,TELEFONICA BRASIL S/A,"78,99"
-TOTAL DO ITEM,"78,99"
-TOTAL DO MÊS,"10.545,81
-'''
+for data in gastos_camara.arquivo:
+    #print(data['nome'])
+    gastos_camara.juntarValoresIguais(dataToBeCombined=data['gastos'])
+
