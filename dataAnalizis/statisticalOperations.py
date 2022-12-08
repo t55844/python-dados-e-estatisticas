@@ -1,3 +1,4 @@
+import copy
 import re
 import json
 from typing import List,Dict,Tuple
@@ -56,18 +57,16 @@ class OrganizacaoGastosCamara:
     def arquivo(self: object):
         return self._arquivo
 
-    def juntarValoresIguais(self: object, dataToBeCombined: List) -> List:
+    def _juntarValoresIguais(self: object, listaInformacoes: List,nome) -> List:
+        dataToBeCombined = copy.deepcopy((listaInformacoes))
         final_data: List = []
 
         for info in dataToBeCombined:
             same_info: List = []
-            single_info: List = []
             to_be_combined = info[0]
-            single_info.append({'info': info[0], 'dadosValores': {'valores': info[-1].split('"')[-2],'howManyTimes': 1}})
             valores = []
 
             for second_info in dataToBeCombined:
-                del single_info[:-1]
                 name = second_info[0]
 
                 if to_be_combined == name:
@@ -75,12 +74,21 @@ class OrganizacaoGastosCamara:
                     valores.append(valor)
                     same_info.append(second_info)
 
-            final_data.append({'info': info[0], 'dadosValores':{'valores': valores,'quantasVezes': len(same_info)}})
-            for info in single_info:
-                final_data.append(info)
-        print(final_data)
 
+            final_data.append({'info': info[0], 'valores': valores, 'quantasVezes': len(same_info)})
+            for valor in same_info:
+                dataToBeCombined.remove(valor)
+            for single_info in dataToBeCombined:
+                final_data.append({'info': single_info[0], 'valores': single_info[-1].split('"')[-2], 'quantasVezes': 1})
         return final_data
+    def listaDeputadosGastoes(self: object):
+        deputados:List = []
+        for data in self.arquivo:
+            gastos = self._juntarValoresIguais(listaInformacoes=data['gastos'],nome=data['nome'])
+            deputados.append({'deputado': {'nome': data['nome'],'dadosGastos':gastos}})
+        for deputado in deputados:
+            print(deputado)
+        return deputados
 
 
 
@@ -88,8 +96,5 @@ class OrganizacaoGastosCamara:
 
 gastos_camara = OrganizacaoGastosCamara('gastosCamaraMunicipalSP_emJson.json')
 
-
-for data in gastos_camara.arquivo:
-    #print(data['nome'])
-    gastos_camara.juntarValoresIguais(dataToBeCombined=data['gastos'])
+gastos_camara.listaDeputadosGastoes()
 
